@@ -1,0 +1,10 @@
+\c ecommerce_db;
+
+CREATE USER debezium_user WITH PASSWORD '123456';
+ALTER USER debezium_user WITH REPLICATION;
+GRANT CONNECT ON DATABASE ecommerce_db TO debezium_user;
+GRANT USAGE ON SCHEMA public TO debezium_user;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT ON TABLES TO debezium_user;
+CREATE PUBLICATION dbz_publication FOR ALL TABLES;

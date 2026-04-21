@@ -1,0 +1,125 @@
+services:
+
+  db:
+    image: postgres:15.14
+    container_name: db
+    ports:
+      - "5430:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce_db}
+      POSTGRES_USER: ${POSTGRES_USER:-app_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass_addhim_port}
+    volumes:
+      - pg_ecom_rt_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d
+    env_file: ../../.env
+    command: >
+      postgres -c wal_level=logical -c max_replication_slots=5 -c max_wal_senders=5
+
+  kafka:
+    image: quay.io/debezium/kafka:3.5
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      NODE_ID: 1
+      CLUSTER_ID: unique_cluster_id_abc
+      NODE_ROLE: combined
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # containers in the same docker network can use kafka:29092
+      # connections from outside docker can use localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://kafka:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
+    volumes:
+      - 'kafka_data:/bitnami/kafka'
+  connect:
+    image: quay.io/debezium/connect:3.5
+    container_name: connect
+    hostname: connect
+    ports:
+      - "8083:8083"
+    environment:
+      GROUP_ID: 1
+      BOOTSTRAP_SERVERS: kafka:29092
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      REST_HOST_NAME: 0.0.0.0
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_SHOWINTERNALTOPICS: true
+    depends_on:
+      - kafka
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.8-alpine
+    container_name: clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASSWORD=pass_adwin_road
+    volumes:
+      - ../clickhouse/config/init:/docker-entrypoint-initdb.d
+      - clickhouse_server:/var/lib/clickhouse
+
+  flink-jobmanager:
+    build:
+      context: ../flink
+      dockerfile: flink.Dockerfile
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081" # Flink UI
+    command: jobmanager
+    env_file:
+      - ../../.env
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 5
+    volumes:
+      # Mount JARs into the universal library folder
+      - ../flink/jars:/opt/flink/usrlib
+      - ../../streaming/flink-jobs:/opt/flink/flink-jobs
+    depends_on:
+      - kafka
+
+  flink-taskmanager:
+    build:
+      context: ../flink
+      dockerfile: flink.Dockerfile
+    container_name: flink-taskmanager
+    command: taskmanager
+    env_file:
+      - ../../.env
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 5
+    volumes:
+      - ../flink/jars:/opt/flink/usrlib
+      - ../../streaming/flink-jobs:/opt/flink/flink-jobs
+    depends_on:
+      - flink-jobmanager
+
+volumes:
+  kafka_data:
+  pg_ecom_rt_data:
+  clickhouse_server:

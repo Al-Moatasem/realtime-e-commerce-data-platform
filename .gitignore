@@ -1,5 +1,6 @@
 
 *.jar
+!infra/flink/jars/*
 simulated_merchants.json
 
 # Byte-compiled / optimized / DLL files
