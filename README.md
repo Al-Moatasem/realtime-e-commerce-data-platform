@@ -598,3 +598,31 @@ GROUP BY
   ![alt text](docs/assets/store_dashboard_page_01.png)
 
   - ⚠ The **Low Stock Alerts** block (bottom-right) shows static data, the data generator doesn't generate/manage stock data.
+
+### Apache Flink
+- Currently there are two flink jobs that were built for testing the ability of connecting to Kafka as source/sink and to ClickHouse as a sink
+- Start the Apache Flink docker services if they were not started
+  ```bash
+  docker compose -f infra/docker_compose/docker_compose.yaml up flink-jobmanager flink-taskmanager -d
+  ```
+- Open the flink job manager docker container
+  ```bash
+  docker exec -it flink-jobmanager bash
+  ```
+- Run flink job to replicate events from kafka topic to ClickHouse table
+  ```bash
+  ./bin/flink run \
+    --python /opt/flink/flink-jobs/sql_02_source_kafka_sink_kafka.py
+
+  ./bin/flink run \
+    --python /opt/flink/flink-jobs/sql_03_source_kafka_sink_clickhouse.py
+  ```
+
+### Stop/Delete the Docker Assets
+- Stop all the docker services
+  ```bash
+  docker compose -f infra/docker_compose/docker_compose.yaml down
+
+  # stop containers + delete all volumes / remove orphan containers from this compose project
+  docker compose -f infra/docker_compose/docker_compose.yaml down --remove-orphans --volumes
+  ```
