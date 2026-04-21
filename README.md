@@ -571,3 +571,30 @@ GROUP BY
     product_id,
     ts_date;
 ```
+
+### Web Applications - Analytics API
+- This application has no UI
+- In a new terminal, navigate to the analytics api directory, activate the virtual environment and install necessary packages
+  ```bash
+  cd analytics_api
+  uv sync
+  .venv/scripts/activate # Linux: source .venv/bin/activate
+  ```
+- Start the analytics api application
+  ```bash
+  uv run uvicorn main:app --port 8003
+  ```
+
+---
+
+- Assuming the data faker application still running and we have started the data generation for at least single merchant through the **MERCHANT TRAFFIC & SIMULATION** play button
+  - If we clicked on the gear icon associated that card, a popup box will list the merchant name(s) and a link to their dashboard
+- The merchant dashboard
+
+  ![alt text](docs/assets/merchant_dashboard_page_01.png)
+
+- Clicking on any store name in the "Store Performance Portfolio" will redirect us to the store dashboard
+
+  ![alt text](docs/assets/store_dashboard_page_01.png)
+
+  - ⚠ The **Low Stock Alerts** block (bottom-right) shows static data, the data generator doesn't generate/manage stock data.
