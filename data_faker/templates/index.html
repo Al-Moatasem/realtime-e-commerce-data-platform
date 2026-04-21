@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Data Generator Control Center</title>
+    <!-- Use Outfit Font for Premium Feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom Modern Dark Mode Styling -->
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --row-active-bg: rgba(56, 189, 248, 0.08);
+            --row-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .premium-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .simulation-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 12px;
+        }
+
+        .simulation-row {
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s ease;
+            border: 1px solid var(--row-border);
+        }
+
+        .simulation-row td {
+            padding: 1.5rem 1rem;
+            vertical-align: middle;
+            border-top: 1px solid var(--row-border);
+            border-bottom: 1px solid var(--row-border);
+        }
+
+        .simulation-row td:first-child {
+            border-left: 1px solid var(--row-border);
+            border-top-left-radius: 1rem;
+            border-bottom-left-radius: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .simulation-row td:last-child {
+            border-right: 1px solid var(--row-border);
+            border-top-right-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+            padding-right: 1.5rem;
+        }
+
+        .simulation-row.active {
+            background: var(--row-active-bg);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .row-title {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .row-desc {
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            font-size: 1.2rem;
+        }
+
+        .btn-play {
+            color: #10b981;
+        }
+
+        .btn-play:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: scale(1.1);
+            color: #34d399;
+        }
+
+        .btn-pause {
+            color: #f59e0b;
+        }
+
+        .btn-pause:hover {
+            background: rgba(245, 158, 11, 0.2);
+            transform: scale(1.1);
+            color: #fbbf24;
+        }
+
+        .btn-stop {
+            color: #ef4444;
+        }
+
+        .btn-stop:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.1);
+            color: #f87171;
+        }
+
+        .btn-config {
+            color: #94a3b8;
+        }
+
+        .btn-config:hover:not(.dimmed) {
+            color: var(--accent-primary);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .btn-config.dimmed {
+            opacity: 0.15;
+            cursor: not-allowed;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            color: #ffffff;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-body label {
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        .form-control {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #ffffff !important;
+        }
+
+        .form-control:focus {
+            background-color: #1e293b;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+            color: #ffffff !important;
+        }
+
+        .status-pill {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.3rem 0.75rem;
+            border-radius: 2rem;
+        }
+
+        .pill-running {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .pill-paused {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .pill-stopped {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .connection-banner {
+            background: #ef4444;
+            color: #ffffff;
+            padding: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+        }
+
+        .config-table {
+            width: 100%;
+            color: #ffffff;
+        }
+
+        .config-table th {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            padding: 1rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .config-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .config-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 9999;
+        }
+
+        .custom-toast {
+            background: #1e293b;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 0.75rem;
+            color: #ffffff;
+            padding: 1rem 1.5rem;
+            min-width: 300px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <span class="fs-4 fw-bold dashboard-header">E-Commerce Data Generator</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-5" style="max-width: 950px;">
+        <div id="connection-error" class="connection-banner">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> ERROR: Kafka Service Disconnected. Start Kafka and
+            restart this application to enable data generation.
+        </div>
+
+        <div class="row mb-5 text-start border-bottom border-white border-opacity-10 pb-4">
+            <div class="col-12">
+                <h1 class="display-6 fw-bold mb-1 text-white">Command Deck</h1>
+                <p class="mb-0 text-white opacity-75">Unified interface for managing real-time business simulation
+                    pipelines.</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="simulation-table">
+                <tbody id="simulation-list"></tbody>
+            </table>
+        </div>
+
+        <div id="active-promos-container" class="mt-4 pt-4 border-top border-white border-opacity-10"
+            style="display: none;">
+            <div class="collapse show" id="promoTableCollapse">
+                <div class="premium-card p-3">
+                    <div class="table-responsive">
+                        <table class="table history-table w-100 mb-0">
+                            <tbody id="summary-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- MODALS -->
+    <div class="modal fade" id="productConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Product Category Configuration</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="config-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Category</th>
+                                <th>Traffic Weight</th>
+                                <th>Conversion Rate (%)</th>
+                                <th class="text-center">Active</th>
+                            </tr>
+                        </thead>
+                        <tbody id="segment-list"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary px-4"
+                        data-bs-dismiss="modal">Finished</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="sessionConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Session Configuration</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-start">
+                    <div class="row g-4">
+                        <div class="col-md-8"><label class="form-label">KAFKA TARGET TOPIC</label><input type="text"
+                                id="cfg-clickstream-topic" class="form-control" value="storefront.clickstream"></div>
+                        <div class="col-md-4"><label class="form-label">RATE (SESSIONS/MIN)</label><input type="number"
+                                id="cfg-rate" class="form-control" value="60"></div>
+                        <div class="col-12">
+                            <label class="form-label text-warning mb-2">FLOW TESTING OVERRIDE</label>
+                            <div class="d-flex gap-4 flex-wrap p-3 bg-dark rounded-3">
+                                <div class="form-check"><input class="form-check-input" type="checkbox"
+                                        value="page_view" id="ev-page-view" checked><label
+                                        class="form-check-label text-white" for="ev-page-view">Page Views</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox"
+                                        value="cart_action" id="ev-cart-action" checked><label
+                                        class="form-check-label text-white" for="ev-cart-action">Cart Actions</label>
+                                </div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox"
+                                        value="checkout_started" id="ev-checkout" checked><label
+                                        class="form-check-label text-white" for="ev-checkout">Checkouts</label></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary px-4"
+                        onclick="saveSessionConfig()" data-bs-dismiss="modal">Apply Settings</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="promoConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Promo Parameters</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-start">
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label">PARALLEL STORE BROADCASTS</label><input
+                                type="number" id="cfg-promo-stores" class="form-control" value="1"></div>
+                        <div class="col-6"><label class="form-label">MIN %</label><input type="number"
+                                id="cfg-promo-min" class="form-control" value="10"></div>
+                        <div class="col-6"><label class="form-label">MAX %</label><input type="number"
+                                id="cfg-promo-max" class="form-control" value="30"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary px-4"
+                        data-bs-dismiss="modal">Save State</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="lifecycleModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Simulation Parameters</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-start">
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label text-white">BACKFILL RANGE (DAYS)</label><input
+                                type="number" id="sim-backfill-days" class="form-control" value="65"></div>
+                        <div class="col-12"><label class="form-label text-white">CONVERSION RATE (0.0 -
+                                1.0)</label><input type="number" step="0.05" id="sim-conv-rate" class="form-control"
+                                value="0.15"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary px-4 w-100"
+                        onclick="startMerchantSim()" data-bs-dismiss="modal">EXECUTE</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="bulkInitModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Bulk Initializer</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-start">
+                    <div class="row g-3">
+                        <div class="col-6"><label class="form-label">MERCHANTS</label><input type="number"
+                                id="init-merchants" class="form-control" value="500"></div>
+                        <div class="col-6"><label class="form-label">STORES</label><input type="number" id="init-stores"
+                                class="form-control" value="750"></div>
+                        <div class="col-6"><label class="form-label">PRODUCTS</label><input type="number"
+                                id="init-products" class="form-control" value="2500"></div>
+                        <div class="col-6"><label class="form-label">CUSTOMERS</label><input type="number"
+                                id="init-customers" class="form-control" value="5000"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-warning w-100 fw-bold"
+                        onclick="runBulkInit()" id="btn-bulk-run">START</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="merchantAuditModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Simulation History Log</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="config-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Merchant</th>
+                                <th>Last Run</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="merchant-audit-list"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary px-4"
+                        data-bs-dismiss="modal">Close</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="promoHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold">Promo Sent History</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="config-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Time</th>
+                                <th>Store</th>
+                                <th>Discount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary"
+                        data-bs-dismiss="modal">Close</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const statusMap = { 'running': 'pill-running', 'paused': 'pill-paused', 'stopped': 'pill-stopped' };
+
+        // Global state for long-running indicators
+        let isSimulatingMerchant = false;
+        let isBulkInitializing = false;
+
+        async function fetchStatus() {
+            try {
+                const resp = await fetch('/api/v1/simulations/status');
+                const data = await resp.json();
+                const connError = document.getElementById('connection-error');
+                if (data.kafka_connected === false) {
+                    connError.style.display = 'block';
+                    document.querySelectorAll('.btn-play').forEach(b => { b.disabled = true; b.classList.add('dimmed'); });
+                } else { connError.style.display = 'none'; }
+                renderList(data);
+            } catch (e) { console.error(e); }
+        }
+
+        async function runBulkInit() {
+            const config = { merchants: parseInt(document.getElementById('init-merchants').value), stores: parseInt(document.getElementById('init-stores').value), products: parseInt(document.getElementById('init-products').value), customers: parseInt(document.getElementById('init-customers').value) };
+
+            isBulkInitializing = true;
+            renderList(await (await fetch('/api/v1/simulations/status')).json()); // Quick UI update
+
+            bootstrap.Modal.getInstance(document.getElementById('bulkInitModal')).hide();
+            showToast("Bulk Initialization Job Started in background...");
+
+            try {
+                const resp = await fetch('/api/v1/simulations/bulk-init', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+                const data = await resp.json();
+                showToast(data.message);
+            } catch (e) {
+                showToast("Initialization failed: " + e.message, true);
+            } finally {
+                isBulkInitializing = false;
+                fetchStatus();
+            }
+        }
+
+        async function startMerchantSim() {
+            const config = { backfill_days: parseInt(document.getElementById('sim-backfill-days').value), conversion_rate: parseFloat(document.getElementById('sim-conv-rate').value) };
+
+            isSimulatingMerchant = true;
+            fetchStatus(); // trigger re-render
+
+            showToast(`Initializing lifecycle: Backfilling ${config.backfill_days} days...`);
+            try {
+                const resp = await fetch('/api/v1/simulations/merchant-lifecycle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+                const data = await resp.json();
+                showToast(data.message);
+            } catch (e) {
+                showToast("Simulation trigger failed: " + e.message, true);
+            } finally {
+                isSimulatingMerchant = false;
+                fetchStatus();
+            }
+        }
+
+        async function saveSessionConfig() {
+            const config = {
+                clickstream_topic: document.getElementById('cfg-clickstream-topic').value,
+                base_sessions_per_minute: parseInt(document.getElementById('cfg-rate').value),
+                allowed_event_types: ['page_view', 'cart_action', 'checkout_started'].filter(id => document.getElementById(`ev-${id === 'checkout_started' ? 'checkout' : id.replace('_', '-')}`).checked)
+            };
+            await fetch('/api/v1/simulations/session-simulator/configure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+        }
+
+        async function triggerAction(jobName, action) {
+            await fetch(`/api/v1/simulations/${jobName}/${action}`, { method: 'POST' });
+            fetchStatus();
+        }
+
+        async function triggerPromoBroadcast() {
+            const config = { num_stores: parseInt(document.getElementById('cfg-promo-stores').value), min_discount: parseFloat(document.getElementById('cfg-promo-min').value), max_discount: parseFloat(document.getElementById('cfg-promo-max').value) };
+            await fetch(`/api/v1/simulations/broadcast-promo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+            fetchSummary();
+        }
+
+        async function fetchSummary() {
+            const response = await fetch('/api/v1/simulations/promo-summary');
+            const data = await response.json();
+            const tableBody = document.getElementById('summary-table-body');
+            document.getElementById('active-promos-container').style.display = data.length ? 'block' : 'none';
+            tableBody.innerHTML = data.map(row => `<tr><td class="text-info smaller"><code>${row.store_id}</code></td><td class="fw-bold text-success text-end">${row.discount}%</td><td class="text-white opacity-50 text-end">${new Date(row.timestamp).toLocaleTimeString()}</td></tr>`).join('');
+        }
+
+        async function fetchAuditHistory() {
+            const list = document.getElementById('history-table-body');
+            const resp = await fetch('/api/v1/simulations/promo-history');
+            const data = await resp.json();
+            list.innerHTML = data.map(r => `<tr><td class="ps-4">${new Date(r.timestamp).toLocaleTimeString()}</td><td><code>${r.store_id.substring(0, 8)}</code></td><td class="fw-bold text-white">${r.discount}%</td><td><span class="text-success">Sent</span></td></tr>`).join('');
+        }
+
+        async function fetchSegments() {
+            const resp = await fetch('/api/v1/simulations/segments');
+            const segments = await resp.json();
+            document.getElementById('segment-list').innerHTML = segments.map(s => `<tr><td class="ps-4"><div class="fw-bold text-white">${s.name.toUpperCase()}</div></td><td><input type="number" class="form-control form-control-sm w-75" value="${s.traffic_weight}" onchange="updateSegment('${s.id}', {traffic_weight: parseInt(this.value)})"></td><td><input type="number" step="0.001" class="form-control form-control-sm w-75" value="${s.conversion_rate}" onchange="updateSegment('${s.id}', {conversion_rate: parseFloat(this.value)})"></td><td class="text-center"><div class="form-check form-switch d-inline-block"><input class="form-check-input" type="checkbox" ${s.is_active ? 'checked' : ''} onchange="updateSegment('${s.id}', {is_active: this.checked})"></div></td></tr>`).join('');
+        }
+
+        async function updateSegment(id, payload) { await fetch('/api/v1/simulations/segments/configure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...payload }) }); }
+
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast mb-2'; if (isError) toast.style.borderColor = '#ef4444';
+            toast.innerHTML = `<div class="d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill text-success"></i><span>${message}</span></div><button type="button" class="btn-close btn-close-white ms-3" onclick="this.parentElement.remove()"></button>`;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+        }
+
+        async function fetchMerchantAudit() {
+            const resp = await fetch('/api/v1/merchants/simulated-history');
+            const data = await resp.json();
+            document.getElementById('merchant-audit-list').innerHTML = data.map(m => `<tr><td class="ps-4"><div class="fw-bold text-white">${m.name}</div><div class="smaller text-muted">${m.id}</div></td><td>${m.last_run}</td><td class="text-end pe-4"><a href="/merchant/${m.id}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3">Dashboards</a></td></tr>`).join('');
+        }
+
+        function renderList(states) {
+            const list = document.getElementById('simulation-list');
+            list.innerHTML = `
+                <!-- MERCHANT SIMULATION ROW -->
+                <tr class="simulation-row">
+                    <td><div class="d-flex align-items-center gap-3 text-start"><div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary"><i class="bi bi-people-fill fs-4"></i></div><div><h6 class="row-title">MERCHANT TRAFFIC & SIMULATION</h6><span class="row-desc text-white opacity-75">Simulate full user journey and backfill trends</span></div></div></td>
+                    <td class="text-center">${isSimulatingMerchant ? `<span class="status-pill pill-paused"><span class="spinner-border spinner-border-sm me-1"></span>PROCESSING</span>` : `<span class="status-pill opacity-50" style="color:#94a3b8; border:1px solid rgba(255,255,255,0.1)">Data Engine</span>`}</td>
+                    <td class="text-end"><div class="d-flex justify-content-end gap-2"><button class="control-btn btn-play" ${isSimulatingMerchant ? 'disabled' : ''} data-bs-toggle="modal" data-bs-target="#lifecycleModal">${isSimulatingMerchant ? `<span class="spinner-border spinner-border-sm"></span>` : `<i class="bi bi-play-fill"></i>`}</button><button class="control-btn btn-config" data-bs-toggle="modal" data-bs-target="#merchantAuditModal" onclick="fetchMerchantAudit()"><i class="bi bi-gear-fill"></i></button></div></td>
+                </tr>
+
+                <tr class="simulation-row"><td><div class="d-flex align-items-center gap-3 text-start"><div class="bg-info bg-opacity-10 p-2 rounded-3 text-info"><i class="bi bi-grid-3x3-gap-fill fs-4"></i></div><div><h6 class="row-title">PRODUCT CATEGORY CONFIG</h6><span class="row-desc text-white opacity-75">Manage behavior per category</span></div></div></td><td class="text-center"><span class="status-pill opacity-50" style="color:#94a3b8; border:1px solid rgba(255,255,255,0.1)">System</span></td><td class="text-end"><div class="d-flex justify-content-end gap-2"><button class="control-btn btn-config" data-bs-toggle="modal" data-bs-target="#productConfigModal" onclick="fetchSegments()"><i class="bi bi-gear-fill"></i></button></div></td></tr>
+
+                <!-- BULK INITIALIZER ROW -->
+                <tr class="simulation-row">
+                    <td><div class="d-flex align-items-center gap-3 text-start"><div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning"><i class="bi bi-database-fill-add fs-4"></i></div><div><h6 class="row-title">BULK DATA INITIALIZATION</h6><span class="row-desc text-white opacity-75">Seed massive baseline distribution</span></div></div></td>
+                    <td class="text-center">${isBulkInitializing ? `<span class="status-pill pill-paused"><span class="spinner-border spinner-border-sm me-1"></span>BULK SEEDING</span>` : `<span class="status-pill opacity-50" style="color:#94a3b8; border:1px solid rgba(255,255,255,0.1)">Manual</span>`}</td>
+                    <td class="text-end"><div class="d-flex justify-content-end gap-2"><button class="control-btn" style="color:#fbbf24;" ${isBulkInitializing ? 'disabled' : ''} data-bs-toggle="modal" data-bs-target="#bulkInitModal">${isBulkInitializing ? `<span class="spinner-border spinner-border-sm"></span>` : `<i class="bi bi-play-fill"></i>`}</button></div></td>
+                </tr>
+            `;
+
+            Object.entries(states).forEach(([name, status]) => {
+                if (name === "kafka_connected") return;
+                const isActive = status === 'running';
+                list.innerHTML += `<tr class="simulation-row ${isActive ? 'active' : ''}"><td><div class="d-flex align-items-center gap-3 text-start"><div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary"><i class="bi bi-cpu-fill fs-4"></i></div><div><h6 class="row-title">${name.replace(/-/g, ' ').toUpperCase()}</h6><span class="row-desc text-white opacity-75">Simulation loop</span></div></div></td><td class="text-center"><span class="status-pill ${statusMap[status]}">${status}</span></td><td class="text-end"><div class="d-flex justify-content-end gap-2">${status === 'stopped' ? `<button class="control-btn btn-play" onclick="triggerAction('${name}', 'start')"><i class="bi bi-play-fill"></i></button>` : (status === 'running' ? `<button class="control-btn btn-pause" onclick="triggerAction('${name}', 'pause')"><i class="bi bi-pause-fill"></i></button>` : `<button class="control-btn btn-play" onclick="triggerAction('${name}', 'resume')"><i class="bi bi-play-fill"></i></button>`)}<button class="control-btn btn-stop ${status === 'stopped' ? 'dimmed' : ''}" onclick="triggerAction('${name}', 'stop')" ${status === 'stopped' ? 'disabled' : ''}><i class="bi bi-stop-fill"></i></button><button class="control-btn btn-config ${name !== 'session-simulator' ? 'dimmed' : ''}" ${name === 'session-simulator' ? `data-bs-toggle="modal" data-bs-target="#sessionConfigModal"` : `disabled`}><i class="bi bi-gear-fill"></i></button></div></td></tr>`;
+            });
+
+            // PROMO BROADCAST ROW WITH INTEGRATED TOGGLE
+            list.innerHTML += `<tr class="simulation-row" style="background: linear-gradient(90deg, rgba(88, 28, 135, 0.1), transparent);">
+                    <td><div class="d-flex align-items-center gap-3 text-start"><div class="bg-primary bg-opacity-10 p-2 rounded-3 text-info"><i class="bi bi-lightning-charge-fill fs-4"></i></div><div><h6 class="row-title">FLASH PROMO BROADCAST</h6><span class="row-desc text-white opacity-50">On-demand Kafka broadcast control</span></div></div></td>
+                    <td class="text-center"><span class="status-pill pill-running" style="background: rgba(139, 92, 246, 0.1); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2);">On Demand</span></td>
+                    <td class="text-end"><div class="d-flex justify-content-end gap-2"><button title="Toggle History View" class="control-btn" style="color: #38bdf8;" data-bs-toggle="collapse" data-bs-target="#promoTableCollapse"><i class="bi bi-activity"></i></button><button class="control-btn" style="color: #c026d3; background: rgba(192, 38, 211, 0.1);" onclick="triggerPromoBroadcast()"><i class="bi bi-broadcast"></i></button><button class="control-btn btn-config" data-bs-toggle="modal" data-bs-target="#promoConfigModal"><i class="bi bi-gear-fill"></i></button></div></td>
+                </tr>`;
+        }
+
+        fetchStatus();
+        fetchSummary();
+        setInterval(fetchStatus, 3000);
+    </script>
+</body>
+
+</html>

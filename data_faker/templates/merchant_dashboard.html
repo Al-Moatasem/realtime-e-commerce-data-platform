@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merchant Portfolio | Global Overview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding-bottom: 50px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: -0.5px;
+        }
+
+        /* Metric Cards */
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .metric-change {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .change-up {
+            color: var(--success);
+        }
+
+        .change-down {
+            color: var(--danger);
+        }
+
+        /* Charts */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        /* Real Funnel Styling */
+        .funnel-stage {
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            margin-bottom: 12px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .funnel-fill {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            transition: width 1s ease-in-out;
+            opacity: 0.6;
+        }
+
+        .funnel-content {
+            position: relative;
+            z-index: 1;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+
+        .funnel-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .funnel-val {
+            font-family: monospace;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .form-select-custom {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Added Table Styles */
+        .custom-table {
+            width: 100%;
+            color: var(--text-main);
+            border-collapse: collapse;
+        }
+
+        .custom-table th,
+        .custom-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .custom-table th {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .custom-table tr {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .custom-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .store-avatar {
+            background: var(--border-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+
+        .badge-status {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-bar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+
+            <div class="text-start">
+                <h4 class="fw-bold mb-0 text-white">{{merchant_name}}</h4>
+                <div class="text-white d-flex align-items-center gap-2" style="font-size: 0.8rem; opacity:0.7;">
+                    Portfolio Overview
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+            <!-- Added IDs and values mapping to FastAPI ENUMs -->
+            <select class="form-select-custom" id="periodFilter">
+                <option value="last_30_days">Last 30 Days</option>
+                <option value="last_7_days" selected>Last 7 Days</option>
+                <option value="today">Today</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4 mt-5">
+        <!-- Key Metrics Row -->
+        <div class="row g-4" id="metrics-grid">
+            <!-- Rendered dynamically by JS -->
+        </div>
+
+        <!-- Chart Row -->
+        <div class="row mt-4 g-4 align-items-stretch">
+            <div class="col-lg-8">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bold mb-0">Aggregate Revenue Over Time</h6>
+                        <i class="bi bi-three-dots text-muted"></i>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-container">
+                    <h6 class="fw-bold mb-4">Conversion Funnel (Aggregated)</h6>
+                    <div id="funnel-container" class="d-flex flex-column justify-content-between"
+                        style="height: 320px;">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Store Table -->
+        <div class="chart-container mt-4 mb-5 p-0 overflow-hidden" style="height: auto;">
+            <div class="p-4 border-bottom border-white border-opacity-10">
+                <h6 class="fw-bold mb-0">Store Performance Portfolio</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="custom-table" id="store-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Store Name</th>
+                            <th>Revenue</th>
+                            <th>Orders</th>
+                            <th>Conversion</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Period Growth</th>
+                        </tr>
+                    </thead>
+                    <tbody id="store-tbody">
+                        <!-- Rendered dynamically by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const API_BASE_URL = 'http://127.0.0.1:8003/api/v1/merchants';
+        const MERCHANT_ID = '{{ merchant_id }}';
+
+        // Global Chart Instance variable
+        let revenueChartInstance = null;
+
+        // --- FORMATTERS ---
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(val);
+        const formatNumber = (val) => new Intl.NumberFormat('en-US').format(val);
+        const formatPercent = (val) => `${val.toFixed(2)}%`;
+        const formatGrowth = (val) => val > 0 ? `+${val.toFixed(1)}%` : `${val.toFixed(1)}%`;
+
+        // --- API FETCH & RENDER LOGIC ---
+        async function loadDashboardData(period) {
+            try {
+                // Fetch all endpoints concurrently for speed
+                const [kpisRes, trendRes, funnelRes, storesRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/${MERCHANT_ID}/kpis?period=${period}`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${MERCHANT_ID}/revenue-trend?period=${period}`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${MERCHANT_ID}/funnel?period=${period}`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${MERCHANT_ID}/stores?period=${period}`).then(r => r.json())
+                ]);
+
+                renderKPIs(kpisRes);
+                renderChart(trendRes.trend);
+                renderFunnel(funnelRes);
+                renderStoresTable(storesRes.stores);
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+                alert("Failed to load data from the analytics API.");
+            }
+        }
+
+        function renderKPIs(data) {
+            const grid = document.getElementById('metrics-grid');
+            grid.innerHTML = ''; // Clear existing
+
+            const metricsConfig = [
+                { label: "Total Revenue", val: formatCurrency(data.total_revenue.value), growth: data.total_revenue.growth_pct },
+                { label: "Total Orders", val: formatNumber(data.total_orders.value), growth: data.total_orders.growth_pct },
+                { label: "Conv. Rate", val: formatPercent(data.conversion_rate.value), growth: data.conversion_rate.growth_pct },
+                { label: "Active Cust.", val: formatNumber(data.active_customers.value), growth: data.active_customers.growth_pct }
+            ];
+
+            metricsConfig.forEach(m => {
+                const isPositive = m.growth >= 0;
+                grid.innerHTML += `
+                <div class="col-md-3">
+                    <div class="metric-card shadow-sm">
+                        <div class="metric-label">${m.label}</div>
+                        <div class="metric-value">${m.val}</div>
+                        <div class="metric-change ${isPositive ? 'change-up' : 'change-down'}">
+                            <i class="bi bi-graph-${isPositive ? 'up' : 'down'} me-1"></i>${formatGrowth(m.growth)}
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderChart(trendData) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+
+            // Extract Labels and Data from backend response
+            const labels = trendData.map(item => item.timestamp);
+            const revenues = trendData.map(item => item.revenue);
+
+            // Destroy old chart if exists to prevent hover glitches
+            if (revenueChartInstance) {
+                revenueChartInstance.destroy();
+            }
+
+            revenueChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Portfolio Revenue',
+                        data: revenues,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#38bdf8'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        function renderFunnel(data) {
+            const funnelCont = document.getElementById('funnel-container');
+            funnelCont.innerHTML = ''; // Clear existing
+
+            // Calculate percentages relative to Total Visits (max)
+            const maxVal = Math.max(data.visits, 1);
+
+            const funnelStages = [
+                { label: 'Visits', val: data.visits, pct: (data.visits / maxVal) * 100 },
+                { label: 'Add to Cart', val: data.add_to_cart, pct: (data.add_to_cart / maxVal) * 100 },
+                { label: 'Checkout', val: data.checkout, pct: (data.checkout / maxVal) * 100 }
+            ];
+
+            funnelStages.forEach(item => {
+                funnelCont.innerHTML += `
+                <div class="funnel-stage">
+                    <div class="funnel-fill" style="width: ${item.pct}%"></div>
+                    <div class="funnel-content">
+                        <span class="funnel-label">${item.label}</span>
+                        <span class="funnel-val">${formatNumber(item.val)}</span>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderStoresTable(stores) {
+            const tbody = document.getElementById('store-tbody');
+            tbody.innerHTML = ''; // Clear existing
+
+            if (stores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No store data found for this period.</td></tr>';
+                return;
+            }
+
+            stores.forEach(s => {
+                const isPositive = s.growth_pct >= 0;
+                tbody.innerHTML += `
+                <tr onclick="window.location.href='/store/${s.store_id}'">
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-white">${s.store_name}</span>
+                        </div>
+                    </td>
+                    <td>${formatCurrency(s.revenue)}</td>
+                    <td>${formatNumber(s.orders)}</td>
+                    <td>${formatPercent(s.conversion_rate)}</td>
+                    <td><span class="badge-status status-active">${s.status}</span></td>
+                    <td class="text-end pe-4 fw-bold ${isPositive ? 'text-success' : 'text-danger'}">${formatGrowth(s.growth_pct)}</td>
+                </tr>`;
+            });
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const periodSelect = document.getElementById('periodFilter');
+
+            // Initial load (uses the 'selected' attribute from HTML which is Last 7 Days)
+            loadDashboardData(periodSelect.value);
+
+            // Re-fetch data whenever dropdown changes
+            periodSelect.addEventListener('change', (e) => {
+                loadDashboardData(e.target.value);
+            });
+        });
+    </script>
+
+</body>
+
+</html>

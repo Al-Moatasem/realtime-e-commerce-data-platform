@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Dashboard | Operations Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding-bottom: 50px;
+        }
+
+        .top-bar {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .breadcrumb-item a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--text-muted);
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.25rem;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            height: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        .data-list-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            overflow: hidden;
+        }
+
+        .list-header {
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .item-row {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+
+        .item-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Status Colors from Backend values */
+        .status-pending, .status-cancelled {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status-shipped, .status-delivered, .status-completed {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .form-select-custom {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-bar d-flex justify-content-between align-items-center">
+        <div class="d-flex flex-column text-start">
+            <h5 class="fw-bold mb-0 text-white" id="navStoreName">Loading...</h5>
+            <div class="smaller opacity-75">
+                <span class="text-white">Owned by</span>
+                <a href="/merchant/{{ merchant_id }}" class="text-info text-decoration-none fw-600" id="navMerchantLink">{{ merchant_name }}</a>
+            </div>
+        </div>
+        <select class="form-select-custom" id="periodFilter">
+            <option value="last_30_days">Last 30 Days</option>
+            <option value="last_7_days" selected>Last 7 Days</option>
+            <option value="today">Today</option>
+        </select>
+    </div>
+
+    <div class="container-fluid px-4 mt-4">
+
+        <!-- Stats Row -->
+        <div class="row g-3 mb-4" id="stats-grid">
+            <!-- Rendered by JS -->
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-7">
+                <div class="chart-container">
+                    <h6 class="fw-bold mb-3">Traffic vs Conversion</h6>
+                    <div class="chart-wrapper">
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="chart-container">
+                    <h6 class="fw-bold mb-4">Top Performing Products (by Revenue)</h6>
+                    <div id="product-performance-list" class="overflow-auto">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Row -->
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="data-list-card">
+                    <div class="list-header d-flex justify-content-between">
+                        <h6 class="fw-bold mb-0">Recent Orders</h6>
+                    </div>
+                    <div id="orders-list">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="data-list-card">
+                    <div class="list-header">
+                        <h6 class="fw-bold mb-0">Low Stock Alerts</h6>
+                    </div>
+                    <div id="inventory-list">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const API_BASE_URL = 'http://127.0.0.1:8003/api/v1/stores';
+        const STORE_ID = '{{ store_id }}';
+        let trafficChartInstance = null;
+
+        // --- HELPERS ---
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+        const formatNumber = (val) => new Intl.NumberFormat('en-US').format(val);
+
+        // --- DATA LOADING ---
+        async function loadStoreData(period) {
+            try {
+                const [kpiData, trafficData, productData, orderData, stockData] = await Promise.all([
+                    fetch(`${API_BASE_URL}/${STORE_ID}/kpis?period=${period}`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${STORE_ID}/traffic-conversion?period=${period}`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${STORE_ID}/top-products?period=${period}`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${STORE_ID}/recent-orders`).then(r => r.json()),
+                    fetch(`${API_BASE_URL}/${STORE_ID}/low-stock`).then(r => r.json())
+                ]);
+
+                updateMetadata(kpiData);
+                renderStats(kpiData);
+                renderTrafficChart(trafficData.data);
+                renderTopProducts(productData.products);
+                renderRecentOrders(orderData.orders);
+                renderStockAlerts(stockData.alerts);
+
+            } catch (err) {
+                console.error("Dashboard Load Error:", err);
+            }
+        }
+
+        function updateMetadata(data) {
+            const storeName = data.store_name || '{{ store_name }}' || STORE_ID;
+            const merchantName = data.merchant_name || '{{ merchant_name }}';
+            const mId = data.merchant_id || '{{ merchant_id }}';
+
+            document.getElementById('navStoreName').innerText = storeName;
+
+            const merchantLink = document.getElementById('navMerchantLink');
+            if (mId) {
+                merchantLink.href = `/merchant/${mId}`;
+                merchantLink.innerText = merchantName;
+            }
+        }
+
+        function renderStats(data) {
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = '';
+
+            const config = [
+                { label: "Revenue", val: formatCurrency(data.revenue.value), icon: "bi-cash-coin", color: "text-success" },
+                { label: "Orders", val: formatNumber(data.orders.value), icon: "bi-cart-check", color: "text-info" },
+                { label: "Visitors", val: formatNumber(data.visitors.value), icon: "bi-people", color: "text-primary" },
+                { label: "AOV", val: formatCurrency(data.aov.value), icon: "bi-tag", color: "text-warning" }
+            ];
+
+            config.forEach(s => {
+                grid.innerHTML += `
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="text-white opacity-50 smaller fw-bold mb-1">${s.label}</div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="fw-bold mb-0 text-white">${s.val}</h4>
+                            <i class="bi ${s.icon} ${s.color} fs-4"></i>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderTrafficChart(data) {
+            const ctx = document.getElementById('trafficChart').getContext('2d');
+            if (trafficChartInstance) trafficChartInstance.destroy();
+
+            trafficChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.timestamp.split(' ')[1] || d.timestamp), // Show only time if hourly
+                    datasets: [
+                        { label: 'Visits', data: data.map(d => d.visits), backgroundColor: '#38bdf8', borderRadius: 5 },
+                        { label: 'Orders', data: data.map(d => d.orders), backgroundColor: '#10b981', borderRadius: 5 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function renderTopProducts(products) {
+            const container = document.getElementById('product-performance-list');
+            container.innerHTML = '';
+
+            const maxRevenue = products.length > 0 ? products[0].revenue : 1;
+
+            products.forEach(p => {
+                const share = (p.revenue / maxRevenue) * 100;
+                container.innerHTML += `
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span class="fw-bold text-truncate" style="max-width: 70%;">${p.product_name}</span>
+                        <span class="text-white">${formatCurrency(p.revenue)}</span>
+                    </div>
+                    <div class="progress" style="height: 6px; background: rgba(255,255,255,0.05);">
+                        <div class="progress-bar bg-info" style="width: ${share}%"></div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderRecentOrders(orders) {
+            const container = document.getElementById('orders-list');
+            container.innerHTML = '';
+
+            orders.forEach(o => {
+                const statusClass = `status-${o.status.toLowerCase()}`;
+                container.innerHTML += `
+                <div class="item-row d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold small">#${o.order_id.substring(0,6)} — ${o.customer_name.substring(0,8)}...</div>
+                        <div class="text-muted smaller">Processed</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold small mb-1">${formatCurrency(o.total_amount)}</div>
+                        <span class="status-badge ${statusClass}">${o.status}</span>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderStockAlerts(alerts) {
+            const container = document.getElementById('inventory-list');
+            container.innerHTML = '';
+
+            alerts.forEach(i => {
+                const severity = i.quantity_left <= 5 ? 'text-danger' : 'text-warning';
+                container.innerHTML += `
+                <div class="item-row d-flex justify-content-between align-items-center">
+                    <span class="small">${i.product_name}</span>
+                    <span class="smaller fw-bold ${severity}">${i.quantity_left} left</span>
+                </div>`;
+            });
+        }
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const filter = document.getElementById('periodFilter');
+            loadStoreData(filter.value);
+            filter.addEventListener('change', (e) => loadStoreData(e.target.value));
+        });
+    </script>
+
+</body>
+
+</html>
