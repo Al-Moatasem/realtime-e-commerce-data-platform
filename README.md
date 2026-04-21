@@ -626,3 +626,28 @@ GROUP BY
   # stop containers + delete all volumes / remove orphan containers from this compose project
   docker compose -f infra/docker_compose/docker_compose.yaml down --remove-orphans --volumes
   ```
+
+## What is Next?
+This is an on-going project, I will keep updating it as much as possible, below are the TODO points:
+- Kafka Connect
+  - Passing credentials in a secure way
+  - Using transformation to manage the sensitive information
+  - Setup the Postgres database in a sharded way (one shard per region)
+    - create different connector per shard that routes to a single topic for all database tables
+    - split the Kafka messages into different topics per database table
+    - How does a schema registry works in this situation?
+- Adding Confluent schema registry
+  - Apply changes to the Postgres tables
+    - Add new fields
+    - Drop fields
+    - Rename fields
+    - Alter field name
+  - Use Avro
+- Using Apache Flink
+- Using Apache Iceberg with an object storage (S3/MinIO or GCS)
+- ClickHouse
+  - Use a multi-node server
+  - Manage server configurations
+  - Use Replica engines
+  - Integrate dbt
+- Using Prometheus and Grafana for observability
