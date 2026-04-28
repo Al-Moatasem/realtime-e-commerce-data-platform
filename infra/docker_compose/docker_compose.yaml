@@ -64,6 +64,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:26.3.8-alpine
     container_name: clickhouse-server
+    hostname: ch-n1
     ports:
       - "8123:8123"
       - "9000:9000"
@@ -76,6 +77,7 @@ services:
       - CLICKHOUSE_PASSWORD=pass_adwin_road
     volumes:
       - ../clickhouse/config/init:/docker-entrypoint-initdb.d
+      - ../clickhouse/sql:/opt/ch/sql
       - clickhouse_server:/var/lib/clickhouse
 
   flink-jobmanager:
