@@ -8,14 +8,18 @@ class TimePeriod(str, Enum):
     LAST_30_DAYS = "last_30_days"
 
 
-def get_time_bounds(period: TimePeriod):
+def get_time_bounds(
+    base_datetime: datetime = datetime.now(timezone.utc),
+    period: TimePeriod = TimePeriod.LAST_7_DAYS,
+):
     """
     Calculates exact start and end datetimes.
     Current period ends exactly NOW, but starts at 00:00:00 of the target day.
     Previous period is calculated for period-over-period growth comparisons.
     """
-    now = datetime.now(timezone.utc)
-    today_midnight = datetime.combine(now.date(), time.min, tzinfo=timezone.utc)
+    today_midnight = datetime.combine(
+        base_datetime.date(), time.min, tzinfo=timezone.utc
+    )
 
     if period == TimePeriod.TODAY:
         start_time = today_midnight
@@ -34,7 +38,7 @@ def get_time_bounds(period: TimePeriod):
 
     return {
         "current_start": start_time,
-        "current_end": now,
+        "current_end": base_datetime,
         "prev_start": prev_start,
         "prev_end": prev_end,
     }

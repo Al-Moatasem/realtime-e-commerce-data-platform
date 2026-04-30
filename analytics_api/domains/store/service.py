@@ -28,7 +28,7 @@ class StoreService:
 
     def get_kpis(self, store_id: str, period: TimePeriod) -> StoreKPIsResponse:
 
-        bounds = get_time_bounds(period)
+        bounds = get_time_bounds(period=period)
 
         current = self.repo.get_kpis(
             store_id, bounds["current_start"], bounds["current_end"]
@@ -72,7 +72,7 @@ class StoreService:
     def get_traffic_conversion(
         self, store_id: str, period: TimePeriod
     ) -> TrafficConversionResponse:
-        bounds = get_time_bounds(period)
+        bounds = get_time_bounds(period=period)
         is_today = period == TimePeriod.TODAY
 
         data = self.repo.get_traffic_conversion(
@@ -83,7 +83,7 @@ class StoreService:
     def get_top_products(
         self, store_id: str, period: TimePeriod
     ) -> TopProductsResponse:
-        bounds = get_time_bounds(period)
+        bounds = get_time_bounds(period=period)
 
         raw_products = self.repo.get_top_products(
             store_id, bounds["current_start"], bounds["current_end"]
