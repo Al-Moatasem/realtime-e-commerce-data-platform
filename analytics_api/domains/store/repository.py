@@ -15,8 +15,9 @@ class StoreRepository:
                 sum(total_revenue) AS revenue,
                 sum(total_orders) AS orders,
                 uniqMerge(unique_visitors_state) AS visitors
-            FROM {settings.table_hourly_kpis}
-            WHERE store_id = %(store_id)s
+            FROM {settings.table_hourly_kpis} AS kpi
+            LEFT JOIN {settings.table_stores} AS store ON kpi.store_id = store.store_id
+            WHERE store.store_id = %(store_id)s
               AND ts_hour >= %(start_time)s
               AND ts_hour < %(end_time)s
         """
@@ -75,7 +76,7 @@ class StoreRepository:
                 sum(s.total_revenue) AS revenue
             FROM {settings.table_daily_sales} AS s
             LEFT JOIN {settings.table_products} AS p ON s.product_id = p.product_id
-            WHERE s.store_id = %(store_id)s
+            WHERE p.store_id = %(store_id)s
               AND s.ts_date >= toDate(%(start_time)s)
               AND s.ts_date <= toDate(%(end_time)s)
             GROUP BY product_id

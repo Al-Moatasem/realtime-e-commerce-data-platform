@@ -231,7 +231,6 @@ We will use the same approach for the remaining Kafka topics, but instead of cop
   DROP TABLE IF EXISTS dwh.agg_hourly_merchant_store_kpis;
   CREATE TABLE dwh.agg_hourly_merchant_store_kpis
   (
-      `merchant_id` String,
       `store_id` String,
       `ts_hour` DateTime,
 
@@ -245,7 +244,7 @@ We will use the same approach for the remaining Kafka topics, but instead of cop
   )
   ENGINE = AggregatingMergeTree()
   PARTITION BY toYYYYMM(ts_hour)
-  ORDER BY (merchant_id, store_id, ts_hour);
+  ORDER BY (store_id, ts_hour);
   ```
 - The materialized view to populate the table (works with newly inserted data)
   ```sql
@@ -253,21 +252,23 @@ We will use the same approach for the remaining Kafka topics, but instead of cop
   CREATE MATERIALIZED VIEW dwh.agg_hourly_merchant_store_kpis_mv
   TO dwh.agg_hourly_merchant_store_kpis
   AS SELECT
-      s.merchant_id AS merchant_id,
-      e.store_id AS store_id,
-      toStartOfHour(e.ts) AS ts_hour,
+      store_id,
+      toStartOfHour(ts) AS ts_hour,
 
-      sumIf(e.expected_total, e.event_name = 'checkout_started') AS total_revenue,
-      countIf(e.event_name = 'checkout_started') AS total_orders,
-      countIf(e.event_name = 'page_view') AS page_views,
-      countIf(e.event_name = 'cart_action') AS cart_actions,
+      /*sum(if(event_name = 'checkout_started', expected_total, 0)) AS total_revenue,*/
+      sumIf(expected_total, event_name = 'checkout_started') AS total_revenue,
 
-      uniqIfState(e.customer_id, e.event_name = 'checkout_started') AS active_customers_state,
-      uniqState(e.session_id) AS unique_visitors_state
-  FROM dwh.kafka_storefront_clickstream AS e
-  LEFT JOIN dwh.kafka_pg_app_stores AS s ON e.store_id = s.store_id
+      /* count(if(event_name = 'checkout_started', 1, NULL)) AS total_orders,*/
+      countIf(event_name = 'checkout_started') AS total_orders,
+
+      countIf(event_name = 'page_view') AS page_views,
+      countIf(event_name = 'cart_action') AS cart_actions,
+
+      uniqIfState(customer_id, event_name = 'checkout_started') AS active_customers_state,
+      uniqState(session_id) AS unique_visitors_state
+
+  FROM dwh.kafka_storefront_clickstream
   GROUP BY
-      merchant_id,
       store_id,
       ts_hour;
   ```
@@ -276,22 +277,19 @@ We will use the same approach for the remaining Kafka topics, but instead of cop
   ```sql
   INSERT INTO dwh.agg_hourly_merchant_store_kpis
   SELECT
-      s.merchant_id AS merchant_id,
-      e.store_id AS store_id,
-      toStartOfHour(e.ts) AS ts_hour,
+      store_id,
+      toStartOfHour(ts) AS ts_hour,
 
-      sumIf(e.expected_total, e.event_name = 'checkout_started') AS total_revenue,
-      countIf(e.event_name = 'checkout_started') AS total_orders,
-      countIf(e.event_name = 'page_view') AS page_views,
-      countIf(e.event_name = 'cart_action') AS cart_actions,
+      sumIf(expected_total, event_name = 'checkout_started') AS total_revenue,
+      countIf(event_name = 'checkout_started') AS total_orders,
+      countIf(event_name = 'page_view') AS page_views,
+      countIf(event_name = 'cart_action') AS cart_actions,
 
-      uniqIfState(e.customer_id, e.event_name = 'checkout_started') AS active_customers_state,
-      uniqState(e.session_id) AS unique_visitors_state
+      uniqIfState(customer_id, event_name = 'checkout_started') AS active_customers_state,
+      uniqState(session_id) AS unique_visitors_state
 
-  FROM dwh.kafka_storefront_clickstream AS e
-  LEFT JOIN dwh.kafka_pg_app_stores AS s ON e.store_id = s.store_id
+  FROM dwh.kafka_storefront_clickstream
   GROUP BY
-      merchant_id,
       store_id,
       ts_hour;
   ```
@@ -300,8 +298,6 @@ We will use the same approach for the remaining Kafka topics, but instead of cop
 DROP TABLE IF EXISTS dwh.agg_daily_product_sales;
 CREATE TABLE dwh.agg_daily_product_sales
 (
-    `merchant_id` String,
-    `store_id` String,
     `product_id` String,
     `ts_date` Date,
     `total_revenue` SimpleAggregateFunction(sum, Decimal(38,2)),
@@ -309,25 +305,19 @@ CREATE TABLE dwh.agg_daily_product_sales
 )
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(ts_date)
-ORDER BY (merchant_id, store_id, ts_date, product_id);
+ORDER BY (product_id, ts_date);
 ```
 ```sql
 DROP VIEW IF EXISTS dwh.agg_daily_product_sales_mv;
 CREATE MATERIALIZED VIEW dwh.agg_daily_product_sales_mv
 TO dwh.agg_daily_product_sales
 AS SELECT
-    o.merchant_id AS merchant_id,
-    o.store_id AS store_id,
-    ol.product_id AS product_id,
-    toDate(ol.created_at) AS ts_date,
-
-    sum(toDecimal64(ol.quantity * ol.unit_price, 2)) AS total_revenue,
-    sum(ol.quantity) AS items_sold
-FROM dwh.kafka_pg_app_order_lines AS ol
-LEFT JOIN dwh.kafka_pg_app_orders AS o ON ol.order_id = o.order_id
+    product_id,
+    toDate(created_at) AS ts_date,
+    sum(toDecimal64(quantity * unit_price, 2)) AS total_revenue,
+    sum(quantity) AS items_sold
+FROM dwh.kafka_pg_app_order_lines
 GROUP BY
-    merchant_id,
-    store_id,
     product_id,
     ts_date
 ;
@@ -336,19 +326,12 @@ populating the daily agg table
 ```sql
 INSERT INTO dwh.agg_daily_product_sales
 SELECT
-    o.merchant_id AS merchant_id,
-    o.store_id AS store_id,
-    ol.product_id AS product_id,
-    toDate(ol.created_at) AS ts_date,
-
-    sum(toDecimal64(ol.quantity * ol.unit_price, 2)) AS total_revenue,
-    sum(ol.quantity) AS items_sold
-
-FROM dwh.kafka_pg_app_order_lines AS ol
-LEFT JOIN dwh.kafka_pg_app_orders AS o ON ol.order_id = o.order_id
+    product_id,
+    toDate(created_at) AS ts_date,
+    sum(toDecimal64(quantity * unit_price, 2)) AS total_revenue,
+    sum(quantity) AS items_sold
+FROM dwh.kafka_pg_app_order_lines
 GROUP BY
-    merchant_id,
-    store_id,
     product_id,
     ts_date;
 ```

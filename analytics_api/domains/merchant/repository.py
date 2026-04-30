@@ -20,10 +20,11 @@ class MerchantRepository:
                 sum(total_orders) AS orders,
                 sum(page_views) AS visits,
                 uniqMerge(active_customers_state) AS active_customers
-            FROM {settings.table_hourly_kpis}
-            WHERE merchant_id = %(merchant_id)s
               AND ts_hour >= now() - INTERVAL %(total_lookback)s HOUR
               AND ts_hour < now() - INTERVAL %(offset_hours)s HOUR
+            FROM {settings.table_hourly_kpis} AS k
+            LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
+            WHERE s.merchant_id = %(merchant_id)s
         """
 
         parameters = {
@@ -54,9 +55,10 @@ class MerchantRepository:
             SELECT
                 toString({time_format}) AS timestamp,
                 sum(total_revenue) AS revenue
-            FROM {settings.table_hourly_kpis}
-            WHERE merchant_id = %(merchant_id)s
               AND ts_hour >= now() - INTERVAL %(interval_hours)s HOUR
+            FROM {settings.table_hourly_kpis} AS k
+            LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
+            WHERE s.merchant_id = %(merchant_id)s
             GROUP BY timestamp
             ORDER BY timestamp ASC
         """
@@ -75,9 +77,10 @@ class MerchantRepository:
                 sum(page_views) AS visits,
                 sum(cart_actions) AS add_to_cart,
                 sum(total_orders) AS checkout
-            FROM {settings.table_hourly_kpis}
-            WHERE merchant_id = %(merchant_id)s
               AND ts_hour >= now() - INTERVAL %(interval_hours)s HOUR
+            FROM {settings.table_hourly_kpis} AS k
+            LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
+            WHERE s.merchant_id = %(merchant_id)s
         """
         result = self.client.query(
             query, {"merchant_id": merchant_id, "interval_hours": interval_hours}
@@ -102,9 +105,9 @@ class MerchantRepository:
                 sum(k.page_views) AS visits
             FROM {settings.table_hourly_kpis} AS k
             LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
-            WHERE k.merchant_id = %(merchant_id)s
               AND k.ts_hour >= now() - INTERVAL %(total_lookback)s HOUR
               AND k.ts_hour < now() - INTERVAL %(offset_hours)s HOUR
+            WHERE s.merchant_id = %(merchant_id)s
             GROUP BY store_id
         """
         params = {
