@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from core.config import settings
 from core.database import get_ch_db_client
 
@@ -7,7 +9,7 @@ class MerchantRepository:
         self.client = get_ch_db_client()
 
     def get_kpis_for_period(
-        self, merchant_id: str, interval_hours: int, offset_hours: int = 0
+        self, merchant_id: str, start_time: datetime, end_time: datetime
     ):
         """
         Fetches KPIs for a specific time window.
@@ -20,20 +22,19 @@ class MerchantRepository:
                 sum(total_orders) AS orders,
                 sum(page_views) AS visits,
                 uniqMerge(active_customers_state) AS active_customers
-              AND ts_hour >= now() - INTERVAL %(total_lookback)s HOUR
-              AND ts_hour < now() - INTERVAL %(offset_hours)s HOUR
             FROM {settings.table_hourly_kpis} AS k
             LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
             WHERE s.merchant_id = %(merchant_id)s
+                AND ts_hour >= %(start_time)s
+                AND ts_hour < %(end_time)s
         """
 
         parameters = {
             "merchant_id": merchant_id,
-            "total_lookback": interval_hours + offset_hours,
-            "offset_hours": offset_hours,
+            "start_time": start_time,
+            "end_time": end_time,
         }
 
-        # clickhouse_connect returns a list of dictionaries if we ask it to
         result = self.client.query(query, parameters).first_item
 
         # Handle nulls if no data exists for the period
@@ -44,46 +45,63 @@ class MerchantRepository:
             "active_customers": int(result.get("active_customers") or 0),
         }
 
-    def get_revenue_trend(self, merchant_id: str, interval_hours: int):
+    def get_revenue_trend(
+        self,
+        merchant_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        is_today: bool,
+    ):
         """Fetches time-series data for the line chart."""
         # Group by hour if viewing "Today", else group by Date
-        time_format = (
-            "toStartOfHour(ts_hour)" if interval_hours <= 24 else "toDate(ts_hour)"
-        )
+        time_format = "toStartOfHour(ts_hour)" if is_today else "toDate(ts_hour)"
 
         query = f"""
             SELECT
                 toString({time_format}) AS timestamp,
                 sum(total_revenue) AS revenue
-              AND ts_hour >= now() - INTERVAL %(interval_hours)s HOUR
             FROM {settings.table_hourly_kpis} AS k
             LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
             WHERE s.merchant_id = %(merchant_id)s
+                AND ts_hour >= %(start_time)s
+                AND ts_hour < %(end_time)s
             GROUP BY timestamp
             ORDER BY timestamp ASC
         """
         result = self.client.query(
-            query, {"merchant_id": merchant_id, "interval_hours": interval_hours}
+            query,
+            {
+                "merchant_id": merchant_id,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
         )
         return [
             {"timestamp": row["timestamp"], "revenue": float(row["revenue"])}
             for row in result.named_results()
         ]
 
-    def get_funnel(self, merchant_id: str, interval_hours: int):
+    def get_funnel(self, merchant_id: str, start_time: datetime, end_time: datetime):
         """Fetches aggregates for the Funnel."""
         query = f"""
             SELECT
                 sum(page_views) AS visits,
                 sum(cart_actions) AS add_to_cart,
                 sum(total_orders) AS checkout
-              AND ts_hour >= now() - INTERVAL %(interval_hours)s HOUR
             FROM {settings.table_hourly_kpis} AS k
             LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
             WHERE s.merchant_id = %(merchant_id)s
+                AND ts_hour >= %(start_time)s
+                AND ts_hour < %(end_time)s
+
         """
         result = self.client.query(
-            query, {"merchant_id": merchant_id, "interval_hours": interval_hours}
+            query,
+            {
+                "merchant_id": merchant_id,
+                "start_time": start_time,
+                "end_time": end_time,
+            },
         ).first_item
         return {
             "visits": int(result.get("visits") or 0),
@@ -92,7 +110,7 @@ class MerchantRepository:
         }
 
     def get_store_portfolio(
-        self, merchant_id: str, interval_hours: int, offset_hours: int = 0
+        self, merchant_id: str, start_time: datetime, end_time: datetime
     ):
         """Fetches KPIs grouped by individual stores, joining with the stores table for status."""
         query = f"""
@@ -105,15 +123,15 @@ class MerchantRepository:
                 sum(k.page_views) AS visits
             FROM {settings.table_hourly_kpis} AS k
             LEFT JOIN {settings.table_stores} AS s ON k.store_id = s.store_id
-              AND k.ts_hour >= now() - INTERVAL %(total_lookback)s HOUR
-              AND k.ts_hour < now() - INTERVAL %(offset_hours)s HOUR
             WHERE s.merchant_id = %(merchant_id)s
+                AND ts_hour >= %(start_time)s
+                AND ts_hour < %(end_time)s
             GROUP BY store_id
         """
         params = {
             "merchant_id": merchant_id,
-            "total_lookback": interval_hours + offset_hours,
-            "offset_hours": offset_hours,
+            "start_time": start_time,
+            "end_time": end_time,
         }
         result = self.client.query(query, params)
         return {row["store_id"]: row for row in result.named_results()}

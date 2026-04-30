@@ -1,3 +1,4 @@
+from core.utils import TimePeriod, get_time_bounds
 from domains.merchant.repository import MerchantRepository
 from domains.merchant.schemas import (
     FunnelResponse,
@@ -6,7 +7,6 @@ from domains.merchant.schemas import (
     RevenueTrendResponse,
     StorePortfolioResponse,
     StorePortfolioRow,
-    TimePeriod,
 )
 
 
@@ -29,20 +29,18 @@ class MerchantService:
         merchant_id: str,
         period: TimePeriod,
     ) -> MerchantKPIsResponse:
-        # Map period to hours
-        hours_map = {
-            TimePeriod.TODAY: 24,
-            TimePeriod.LAST_7_DAYS: 24 * 7,
-            TimePeriod.LAST_30_DAYS: 24 * 30,
-        }
-        interval = hours_map[period]
+        bounds = get_time_bounds(period=period)
 
         # Fetch data from ClickHouse
         current_data = self.repo.get_kpis_for_period(
-            merchant_id, interval_hours=interval, offset_hours=0
+            merchant_id=merchant_id,
+            start_time=bounds["current_start"],
+            end_time=bounds["current_end"],
         )
         prev_data = self.repo.get_kpis_for_period(
-            merchant_id, interval_hours=interval, offset_hours=interval
+            merchant_id=merchant_id,
+            start_time=bounds["prev_start"],
+            end_time=bounds["prev_end"],
         )
 
         # Calculate Conversion Rates
@@ -87,39 +85,41 @@ class MerchantService:
     def get_revenue_trend(
         self, merchant_id: str, period: TimePeriod
     ) -> RevenueTrendResponse:
-        hours_map = {
-            TimePeriod.TODAY: 24,
-            TimePeriod.LAST_7_DAYS: 24 * 7,
-            TimePeriod.LAST_30_DAYS: 24 * 30,
-        }
-        trend_data = self.repo.get_revenue_trend(merchant_id, hours_map[period])
+
+        bounds = get_time_bounds(period=period)
+
+        trend_data = self.repo.get_revenue_trend(
+            merchant_id=merchant_id,
+            start_time=bounds["current_start"],
+            end_time=bounds["current_end"],
+            is_today=period == TimePeriod.TODAY,
+        )
         return RevenueTrendResponse(trend=trend_data)
 
     def get_funnel(self, merchant_id: str, period: TimePeriod) -> FunnelResponse:
-        hours_map = {
-            TimePeriod.TODAY: 24,
-            TimePeriod.LAST_7_DAYS: 24 * 7,
-            TimePeriod.LAST_30_DAYS: 24 * 30,
-        }
-        funnel_data = self.repo.get_funnel(merchant_id, hours_map[period])
+        bounds = get_time_bounds(period=period)
+        funnel_data = self.repo.get_funnel(
+            merchant_id=merchant_id,
+            start_time=bounds["current_start"],
+            end_time=bounds["current_end"],
+        )
         return FunnelResponse(**funnel_data)
 
     def get_store_portfolio(
         self, merchant_id: str, period: TimePeriod
     ) -> StorePortfolioResponse:
-        hours_map = {
-            TimePeriod.TODAY: 24,
-            TimePeriod.LAST_7_DAYS: 24 * 7,
-            TimePeriod.LAST_30_DAYS: 24 * 30,
-        }
-        interval = hours_map[period]
+        bounds = get_time_bounds(period=period)
 
         # Fetch current and previous period data per store
         current_data = self.repo.get_store_portfolio(
-            merchant_id, interval_hours=interval, offset_hours=0
+            merchant_id=merchant_id,
+            start_time=bounds["current_start"],
+            end_time=bounds["current_end"],
         )
         prev_data = self.repo.get_store_portfolio(
-            merchant_id, interval_hours=interval, offset_hours=interval
+            merchant_id=merchant_id,
+            start_time=bounds["current_start"],
+            end_time=bounds["current_end"],
         )
 
         portfolio_rows = []
