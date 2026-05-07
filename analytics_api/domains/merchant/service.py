@@ -118,8 +118,8 @@ class MerchantService:
         )
         prev_data = self.repo.get_store_portfolio(
             merchant_id=merchant_id,
-            start_time=bounds["current_start"],
-            end_time=bounds["current_end"],
+            start_time=bounds["prev_start"],
+            end_time=bounds["prev_end"],
         )
 
         portfolio_rows = []

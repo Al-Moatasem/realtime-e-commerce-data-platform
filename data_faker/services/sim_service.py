@@ -296,11 +296,18 @@ async def run_merchant_lifecycle_task(
                 customer = random.choice(customers)
 
                 # 1. Page View
+                # (81% with product_id, 19% without product_id, percentages are arbitrary)
+                view_product_id = (
+                    random.choice(store._products).product_id
+                    if random.random() < 0.81
+                    else None
+                )
                 view = PageViewEvent(
                     session_id=session_id,
                     store_id=store.store_id,
                     customer_id=customer.customer_id,
                     timestamp=current_time,
+                    product_id=view_product_id,
                 )
                 await kafka_producer_service.produce_message(
                     "storefront.clickstream", view, str(store.store_id)
