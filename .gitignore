@@ -1,4 +1,10 @@
 
+# DBT
+dwh/target/
+dwh/dbt_packages/
+dwh/logs/
+dwh/.user.yml
+
 *.jar
 !infra/flink/jars/*
 simulated_merchants.json

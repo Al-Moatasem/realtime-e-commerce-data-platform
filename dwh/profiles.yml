@@ -1,0 +1,12 @@
+ch_dwh:
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      driver: http
+      schema: "{{ env_var('CLICKHOUSE_DATABASE_DBT') }}"
+      host: "{{ env_var('CLICKHOUSE_HOST') }}"
+      port: "{{ env_var('CLICKHOUSE_PORT') | int }}"
+      user: "{{ env_var('CLICKHOUSE_USER') }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"

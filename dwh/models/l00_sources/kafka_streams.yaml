@@ -1,0 +1,15 @@
+version: 2
+sources:
+  - name: kafka_pg_app
+    schema: dwh_dbt # db name
+    tables:
+      - name: raw_kafka_pg_app_order_lines
+      - name: raw_kafka_pg_app_orders
+      - name: raw_kafka_pg_app_products
+      - name: raw_kafka_pg_app_stores
+
+
+  - name: kafka_clickstream
+    schema: dwh_dbt
+    tables:
+      - name: raw_kafka_storefront_clickstream
